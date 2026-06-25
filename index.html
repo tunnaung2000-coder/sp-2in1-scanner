@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SP 2 in 1 Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 18px 12px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0 0 18px;
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .panel {
+      background: #1f2937;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+
+    .login-panel {
+      max-width: 460px;
+      margin: 60px auto 0;
+      text-align: center;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .login-hint {
+      color: #cbd5e1;
+      font-weight: 700;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .top-buttons {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .small-btn, select {
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-weight: 800;
+    }
+
+    .reload-btn { background: #64748b; color: white; }
+    .camera-btn { background: #06b6d4; color: white; }
+    .stop-btn { background: #ef4444; color: white; display: none; }
+    .logout-btn { background: #f97316; color: white; }
+
+    .mode-badge {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #fde047;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .camera-box {
+      display: none;
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 760px;
+      min-height: 420px;
+      margin: 0 auto;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .camera-note {
+      text-align: center;
+      margin-top: 8px;
+      color: #fde68a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .scan-row {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    input {
+      width: 100%;
+      height: 58px;
+      border-radius: 10px;
+      border: 2px solid #d1d5db;
+      padding: 0 16px;
+      font-size: 22px;
+      outline: none;
+      background: #fff7ed;
+      color: #111827;
+      font-weight: 800;
+    }
+
+    input:focus {
+      border-color: #22d3ee;
+      box-shadow: 0 0 0 3px rgba(34,211,238,0.18);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .scan-btn, .login-btn {
+      height: 58px;
+      border: none;
+      border-radius: 10px;
+      background: #06b6d4;
+      color: white;
+      font-size: 16px;
+    }
+
+    .login-btn {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .scan-btn:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+    .just-scanned {
+      background: #111827;
+      border: 1px solid #334155;
+      color: #93c5fd;
+      text-align: center;
+      padding: 11px;
+      border-radius: 7px;
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .just-scanned span { color: #fde047; }
+
+    .sound-btn {
+      width: 100%;
+      height: 42px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      margin-bottom: 8px;
+      font-weight: 900;
+    }
+
+    .hint {
+      text-align: center;
+      color: #e5e7eb;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .load-info {
+      text-align: center;
+      color: #67e8f9;
+      font-size: 13px;
+      font-weight: 800;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .status {
+      display: none;
+      padding: 11px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-weight: 900;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .status.show { display: block; }
+    .success { background: #064e3b; color: #86efac; }
+    .error { background: #7f1d1d; color: #fecaca; }
+    .notfound { background: #78350f; color: #fde68a; }
+    .loading { background: #1e3a8a; color: #bfdbfe; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .summary-card {
+      background: #1f2937;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+    }
+
+    .summary-number {
+      font-size: 30px;
+      font-weight: 900;
+      color: #22c55e;
+      word-break: break-word;
+    }
+
+    .summary-label {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .latest-empty {
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .latest-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      border-top: 1px solid #334155;
+    }
+
+    .latest-key, .latest-value {
+      padding: 10px;
+      border-bottom: 1px solid #334155;
+      font-size: 15px;
+    }
+
+    .latest-key {
+      background: #111827;
+      color: #bae6fd;
+      font-weight: 900;
+    }
+
+    .latest-value {
+      color: white;
+      font-weight: 800;
+      word-break: break-word;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+      font-size: 14px;
+    }
+
+    th {
+      background: #111827;
+      color: #67e8f9;
+      text-align: left;
+      padding: 9px;
+      border: 1px solid #475569;
+      font-weight: 900;
+    }
+
+    td {
+      padding: 9px;
+      border: 1px solid #475569;
+      color: white;
+      font-weight: 700;
+    }
+
+    .data-cell {
+      max-width: 520px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .action-row button {
+      height: 52px;
+      border: none;
+      border-radius: 10px;
+    }
+
+    .btn-clear { background: #ef4444; color: white; }
+    .btn-csv { background: #22c55e; color: #052e16; }
+    .btn-sheet { background: #facc15; color: #422006; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 720px) {
+      .page { padding: 12px 8px; }
+      h1 { font-size: 22px; }
+
+      .scan-row,
+      .summary-grid,
+      .action-row,
+      .latest-grid {
+        grid-template-columns: 1fr;
+      }
+
+      input, .scan-btn { height: 52px; }
+      .top-buttons { justify-content: center; }
+
+      #reader {
+        max-width: 100%;
+        min-height: 380px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loginPage" class="page">
+    <div class="panel login-panel">
+      <div class="login-title">SP 2 in 1 Scanner</div>
+      <div class="login-hint">
+        AG082282 = SP OUT Scanner<br>
+        AG198787 = SP IN Scanner
+      </div>
+
+      <input id="loginCode" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter Login Code">
+      <button class="login-btn" onclick="loginNow()">Login</button>
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </div>
+
+  <div id="appPage" class="page hidden">
+    <h1 id="appTitle">SP 2 in 1 Scanner</h1>
+
+    <div class="panel">
+      <div class="top-buttons">
+        <span id="modeBadge" class="mode-badge">-</span>
+        <button class="small-btn reload-btn" onclick="loadInventoryData(true, false)">Reload Data</button>
+        <button class="small-btn logout-btn" onclick="logoutApp()">Logout</button>
+        <button id="startCameraBtn" class="small-btn camera-btn" onclick="startCamera()">Start Camera</button>
+        <button id="stopCameraBtn" class="small-btn stop-btn" onclick="stopCamera()">Stop Camera</button>
+      </div>
+
+      <div id="cameraBox" class="camera-box">
+        <div id="reader"></div>
+        <div class="camera-note">Barcode / SP code ကို camera အလယ်မှာထားပါ။ ဖတ်မိတာနဲ့ auto scan ဝင်ပါမယ်။</div>
+      </div>
+
+      <div class="scan-row">
+        <input id="scanBox" type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Scan SP Number / Barcode...">
+        <button id="scanBtn" class="scan-btn" onclick="manualScan()">Scan</button>
+      </div>
+
+      <div class="just-scanned">Just Scanned: <span id="justScannedValue">-</span></div>
+
+      <button id="soundBtn" class="sound-btn" type="button" onclick="enableSound()">Sound Auto ON</button>
+
+      <div id="modeHint" class="hint">-</div>
+      <div id="loadInfo" class="load-info">Loading sheet data...</div>
+      <div id="statusBox" class="status"></div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div id="scanCount" class="summary-number">0</div>
+        <div class="summary-label">Scanned Count</div>
+      </div>
+      <div class="summary-card">
+        <div id="lastScanned" class="summary-number">-</div>
+        <div class="summary-label">Last Scanned SP</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="section-title">Latest Scanned Data</h2>
+      <div id="latestData"><div class="latest-empty">No scan yet</div></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="section-title">SP Scan History</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Mode</th>
+              <th>Scan Time</th>
+              <th>Scanned Code</th>
+              <th>SP</th>
+              <th>Sheet Row</th>
+              <th>Update</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="8">No history yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-clear" onclick="clearHistory()">Clear History</button>
+        <button class="btn-csv" onclick="downloadCSV()">Download CSV</button>
+        <button class="btn-sheet" onclick="createGoogleSheet()">Create Google Sheet</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // သင့် Apps Script Web App /exec URL ကို ဒီနေရာမှာ ထည့်ပါ။
+    const API_URL = "https://script.google.com/macros/s/AKfycbwIyJ64azV6dmPK_pa4jSCEj80zybluzpHzOKFMfy8aIJ-P0pYnq-C-DD0GgRMlU1f6zw/exec";
+
+    const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v1";
+    const HISTORY_STORAGE_PREFIX = "sp_2in1_history_";
+    const MAX_HISTORY_KEEP = 5000;
+    const MAX_TABLE_SHOW = 200;
+    const AUTO_RELOAD_MINUTES = 3;
+
+    let loginCode = "";
+    let currentMode = ""; // OUT or IN
+    let currentTitle = "";
+    let autoReloadTimer = null;
+
+    const loginPage = document.getElementById("loginPage");
+    const appPage = document.getElementById("appPage");
+    const loginCodeInput = document.getElementById("loginCode");
+    const loginStatus = document.getElementById("loginStatus");
+
+    const scanBox = document.getElementById("scanBox");
+    const scanBtn = document.getElementById("scanBtn");
+    const statusBox = document.getElementById("statusBox");
+    const loadInfo = document.getElementById("loadInfo");
+    const latestData = document.getElementById("latestData");
+    const historyBody = document.getElementById("historyBody");
+
+    let inventoryMap = {};
+    let inventoryHeaders = [];
+    let inventoryLoaded = false;
+    let historyList = [];
+    let scanBusy = false;
+
+    let soundEnabled = true;
+    let audioContext = null;
+
+    let html5QrCode = null;
+    let cameraRunning = false;
+    let lastCameraCode = "";
+    let lastCameraTime = 0;
+
+    window.onload = function() {
+      loginCodeInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          loginNow();
+        }
+      });
+
+      scanBox.addEventListener("keydown", function(e) {
+        unlockSound();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          manualScan();
+        }
+      });
+
+      setupAutoSoundUnlock();
+
+      const savedCode = sessionStorage.getItem(LOGIN_STORAGE_KEY) || "";
+      if (savedCode) {
+        loginCode = savedCode;
+        verifyLoginCode(true);
+      } else {
+        loginCodeInput.focus();
+      }
+    };
+
+    function loginNow() {
+      loginCode = normalizeText(loginCodeInput.value);
+
+      if (!loginCode) {
+        showLoginStatus("Login code ထည့်ပါ။", "error");
+        return;
+      }
+
+      verifyLoginCode(false);
+    }
+
+    function verifyLoginCode(isAuto) {
+      showLoginStatus("Checking login code...", "loading");
+
+      apiCall("login", { code: loginCode })
+        .then(function(res) {
+          if (res && res.status === "Success") {
+            currentMode = res.mode || "";
+            currentTitle = res.title || (currentMode === "IN" ? "SP IN Scanner" : "SP OUT Scanner");
+            sessionStorage.setItem(LOGIN_STORAGE_KEY, loginCode);
+            openApp();
+          } else {
+            sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+            loginCode = "";
+            showLoginStatus((res && res.message) || "Invalid login code", "error");
+            if (!isAuto) playSound(false);
+          }
+        })
+        .catch(function(err) {
+          sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+          loginCode = "";
+          showLoginStatus("API connection error: " + err.message, "error");
+        });
+    }
+
+    function openApp() {
+      loginPage.classList.add("hidden");
+      appPage.classList.remove("hidden");
+
+      document.getElementById("appTitle").textContent = currentTitle;
+      document.getElementById("modeBadge").textContent = currentMode === "IN" ? "SP IN / Update Mode" : "SP OUT / Data Only Mode";
+      document.getElementById("modeHint").textContent = currentMode === "IN"
+        ? "SP IN mode: data ယူမယ်၊ scan လုပ်မယ်၊ Sheet ထဲ F:H clear + I Returned date update ဝင်မယ်။"
+        : "SP OUT mode: data ယူမယ်၊ scan history မှတ်မယ်၊ Sheet ထဲ data မပြန်ရေးပါ။";
+
+      loadHistory();
+      loadInventoryData(false, false, function() {
+        startAutoReload();
+      });
+
+      setTimeout(function() {
+        scanBox.focus();
+      }, 200);
+    }
+
+    function logoutApp() {
+      stopCamera();
+      sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+      loginCode = "";
+      currentMode = "";
+      currentTitle = "";
+      inventoryLoaded = false;
+      inventoryMap = {};
+      inventoryHeaders = [];
+      historyList = [];
+
+      appPage.classList.add("hidden");
+      loginPage.classList.remove("hidden");
+      loginCodeInput.value = "";
+      hideLoginStatus();
+      loginCodeInput.focus();
+    }
+
+    function showLoginStatus(message, type) {
+      loginStatus.textContent = message;
+      loginStatus.className = "status show " + type;
+    }
+
+    function hideLoginStatus() {
+      loginStatus.textContent = "";
+      loginStatus.className = "status";
+    }
+
+    function setupAutoSoundUnlock() {
+      initAudioContext();
+      const unlock = function() { unlockSound(); };
+      document.addEventListener("click", unlock, { passive: true });
+      document.addEventListener("touchstart", unlock, { passive: true });
+      document.addEventListener("keydown", unlock, { passive: true });
+    }
+
+    function initAudioContext() {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      } catch (e) {
+        audioContext = null;
+      }
+    }
+
+    function unlockSound() {
+      try {
+        initAudioContext();
+        if (audioContext && audioContext.state === "suspended") {
+          audioContext.resume();
+        }
+        soundEnabled = true;
+      } catch (e) {}
+    }
+
+    function enableSound() {
+      unlockSound();
+      playSound(true);
+    }
+
+    function playSound(success) {
+      if (!soundEnabled) return;
+      try {
+        initAudioContext();
+        if (!audioContext) return;
+        if (audioContext.state === "suspended") audioContext.resume();
+
+        const now = audioContext.currentTime;
+        const gainNode = audioContext.createGain();
+        gainNode.connect(audioContext.destination);
+        gainNode.gain.setValueAtTime(0.85, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        const osc1 = audioContext.createOscillator();
+        osc1.connect(gainNode);
+        osc1.type = "square";
+
+        if (success) {
+          osc1.frequency.setValueAtTime(950, now);
+          osc1.frequency.setValueAtTime(1250, now + 0.12);
+          osc1.start(now);
+          osc1.stop(now + 0.28);
+          if (navigator.vibrate) navigator.vibrate(80);
+        } else {
+          osc1.frequency.setValueAtTime(220, now);
+          osc1.frequency.setValueAtTime(160, now + 0.15);
+          osc1.start(now);
+          osc1.stop(now + 0.35);
+          if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+        }
+      } catch (e) {}
+    }
+
+    function startAutoReload() {
+      if (autoReloadTimer) clearInterval(autoReloadTimer);
+      autoReloadTimer = setInterval(function() {
+        loadInventoryData(true, true);
+      }, AUTO_RELOAD_MINUTES * 60 * 1000);
+    }
+
+    function loadInventoryData(forceRefresh, silent, afterLoad) {
+      if (!silent) {
+        inventoryLoaded = false;
+        inventoryMap = {};
+        inventoryHeaders = [];
+        scanBtn.disabled = true;
+        loadInfo.textContent = "Loading sheet data...";
+        showStatus("Loading sheet data...", "loading");
+      }
+
+      apiCall("data", {
+        code: loginCode,
+        refresh: forceRefresh ? "1" : "0",
+        t: Date.now()
+      })
+        .then(function(res) {
+          if (!res || res.status !== "Success") {
+            if (!silent) {
+              showStatus((res && res.message) || "Load data error.", "error");
+              loadInfo.textContent = (res && res.message) || "Load data error.";
+              scanBtn.disabled = true;
+            }
+            if (typeof afterLoad === "function") afterLoad(false);
+            return;
+          }
+
+          inventoryHeaders = res.headers || [];
+          inventoryMap = buildInventoryMap(res.rows || []);
+          inventoryLoaded = true;
+          scanBtn.disabled = false;
+
+          const nowText = formatTimeOnly(new Date());
+          loadInfo.textContent = "Sheet data loaded: " + (res.total || 0) +
+            " | Auto reload: " + AUTO_RELOAD_MINUTES + " min" +
+            " | Last: " + nowText;
+
+          if (!silent) {
+            showStatus("Sheet data loaded: " + (res.total || 0), "success");
+            readyNextScan();
+          }
+
+          if (typeof afterLoad === "function") afterLoad(true);
+        })
+        .catch(function(err) {
+          if (!silent) {
+            showStatus("API load failed: " + err.message, "error");
+            loadInfo.textContent = "API load failed.";
+            scanBtn.disabled = true;
+          }
+          if (typeof afterLoad === "function") afterLoad(false);
+        });
+    }
+
+    function buildInventoryMap(rows) {
+      const map = {};
+
+      rows.forEach(function(row) {
+        const keys = [row.spNumber, row.barcode1, row.barcode2];
+        keys.forEach(function(key) {
+          const cleanKey = normalizeText(key);
+          if (cleanKey) {
+            map[cleanKey] = row;
+          }
+        });
+      });
+
+      return map;
+    }
+
+    function manualScan() {
+      unlockSound();
+      processScan(scanBox.value.trim(), false);
+    }
+
+    function processScan(scanValue, isRetry) {
+      if (scanBusy) return;
+
+      if (!inventoryLoaded) {
+        showStatus("Please wait. Sheet data is loading.", "loading");
+        playSound(false);
+        readyNextScan();
+        return;
+      }
+
+      if (!scanValue) {
+        showStatus("Please scan SP Number or Barcode.", "error");
+        playSound(false);
+        readyNextScan();
+        return;
+      }
+
+      document.getElementById("justScannedValue").textContent = scanValue;
+
+      if (currentMode === "IN") {
+        processInScan(scanValue);
+      } else {
+        processOutScan(scanValue, isRetry);
+      }
+    }
+
+    function processOutScan(scanValue, isRetry) {
+      const key = normalizeText(scanValue);
+      const item = inventoryMap[key];
+
+      if (!item) {
+        if (isRetry) {
+          showStatus("SP / Barcode not found: " + scanValue, "notfound");
+          playSound(false);
+          readyNextScan();
+          return;
+        }
+
+        showStatus("Not found. Reloading new sheet data...", "loading");
+        loadInventoryData(true, true, function(ok) {
+          if (!ok) {
+            showStatus("Reload failed. SP / Barcode not found: " + scanValue, "notfound");
+            playSound(false);
+            readyNextScan();
+            return;
+          }
+          processOutScan(scanValue, true);
+        });
+        return;
+      }
+
+      const record = makeHistoryRecord({
+        mode: "OUT",
+        scannedCode: scanValue,
+        spNumber: item.spNumber || scanValue,
+        rowNumber: item.rowNumber || "",
+        updateText: "",
+        values: item.values || []
+      });
+
+      showStatus("SP OUT data found. History saved only.", "success");
+      showLatestData(record);
+      addHistory(record);
+      playSound(true);
+      readyNextScan();
+    }
+
+    function processInScan(scanValue) {
+      scanBusy = true;
+      scanBtn.disabled = true;
+      showStatus("SP IN updating Sheet: " + scanValue, "loading");
+      readyNextScan();
+
+      apiCall("scanIn", {
+        code: loginCode,
+        scanValue: scanValue,
+        t: Date.now()
+      })
+        .then(function(res) {
+          scanBusy = false;
+          scanBtn.disabled = false;
+
+          if (res && res.status === "Success") {
+            const data = res.data || {};
+            const record = makeHistoryRecord({
+              mode: "IN",
+              scannedCode: data.scannedValue || scanValue,
+              spNumber: data.spNumber || data.scannedSP || scanValue,
+              rowNumber: data.rowNumber || "",
+              updateText: data.updateText || "",
+              values: data.values || [],
+              headers: data.headers || inventoryHeaders
+            });
+
+            showStatus("SP IN success. Sheet updated: " + record.spNumber, "success");
+            showLatestData(record);
+            addHistory(record);
+            playSound(true);
+            loadInventoryData(true, true);
+
+          } else {
+            showStatus((res && res.message) || "SP IN update failed.", res && res.status === "Not Found" ? "notfound" : "error");
+            playSound(false);
+          }
+
+          readyNextScan();
+        })
+        .catch(function(err) {
+          scanBusy = false;
+          scanBtn.disabled = false;
+          showStatus("API update failed: " + err.message, "error");
+          playSound(false);
+          readyNextScan();
+        });
+    }
+
+    function makeHistoryRecord(input) {
+      const headers = input.headers || inventoryHeaders || [];
+      const values = input.values || [];
+
+      return {
+        no: historyList.length + 1,
+        mode: input.mode || currentMode,
+        scanTime: formatDateTime(new Date()),
+        scannedCode: input.scannedCode || "",
+        spNumber: input.spNumber || "",
+        rowNumber: input.rowNumber || "",
+        updateText: input.updateText || "",
+        headers: headers,
+        values: values,
+        dataText: makeDataText(headers, values)
+      };
+    }
+
+    function showLatestData(record) {
+      const headers = record.headers || inventoryHeaders || [];
+      const values = record.values || [];
+
+      let html = '<div class="latest-grid">';
+      html += `<div class="latest-key">Mode</div><div class="latest-value">${escapeHtml(record.mode || currentMode)}</div>`;
+      html += `<div class="latest-key">Scanned Code</div><div class="latest-value">${escapeHtml(record.scannedCode || "")}</div>`;
+      html += `<div class="latest-key">SP Number</div><div class="latest-value">${escapeHtml(record.spNumber || "")}</div>`;
+      html += `<div class="latest-key">Sheet Row</div><div class="latest-value">${escapeHtml(record.rowNumber || "-")}</div>`;
+
+      if (record.updateText) {
+        html += `<div class="latest-key">Update</div><div class="latest-value">${escapeHtml(record.updateText)}</div>`;
+      }
+
+      for (let i = 0; i < values.length; i++) {
+        const label = headers[i] && String(headers[i]).trim() !== "" ? headers[i] : "Column " + String.fromCharCode(65 + i);
+        html += `<div class="latest-key">${escapeHtml(label)}</div><div class="latest-value">${escapeHtml(values[i] || "-")}</div>`;
+      }
+
+      html += "</div>";
+      latestData.innerHTML = html;
+    }
+
+    function makeDataText(headers, values) {
+      const parts = [];
+      for (let i = 0; i < values.length; i++) {
+        const value = String(values[i] || "").trim();
+        if (!value) continue;
+        const header = headers[i] && String(headers[i]).trim() !== "" ? headers[i] : "Column " + String.fromCharCode(65 + i);
+        parts.push(header + ": " + value);
+      }
+      return parts.join(" | ");
+    }
+
+    function addHistory(record) {
+      historyList.unshift(record);
+      if (historyList.length > MAX_HISTORY_KEEP) {
+        historyList = historyList.slice(0, MAX_HISTORY_KEEP);
+      }
+      renumberHistory();
+      saveHistory();
+      renderHistory();
+    }
+
+    function renumberHistory() {
+      for (let i = 0; i < historyList.length; i++) {
+        historyList[i].no = historyList.length - i;
+      }
+    }
+
+    function renderHistory() {
+      document.getElementById("scanCount").textContent = historyList.length;
+      document.getElementById("lastScanned").textContent = historyList.length ? historyList[0].spNumber : "-";
+
+      if (historyList.length === 0) {
+        historyBody.innerHTML = `<tr><td colspan="8">No history yet</td></tr>`;
+        return;
+      }
+
+      const showList = historyList.slice(0, MAX_TABLE_SHOW);
+
+      historyBody.innerHTML = showList.map(function(item) {
+        return `
+          <tr>
+            <td>${escapeHtml(item.no)}</td>
+            <td>${escapeHtml(item.mode)}</td>
+            <td>${escapeHtml(item.scanTime)}</td>
+            <td>${escapeHtml(item.scannedCode)}</td>
+            <td>${escapeHtml(item.spNumber)}</td>
+            <td>${escapeHtml(item.rowNumber || "-")}</td>
+            <td>${escapeHtml(item.updateText || "-")}</td>
+            <td class="data-cell" title="${escapeHtml(item.dataText)}">${escapeHtml(item.dataText)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function loadHistory() {
+      try {
+        const saved = localStorage.getItem(getHistoryKey());
+        historyList = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        historyList = [];
+      }
+      renderHistory();
+    }
+
+    function saveHistory() {
+      localStorage.setItem(getHistoryKey(), JSON.stringify(historyList));
+    }
+
+    function getHistoryKey() {
+      return HISTORY_STORAGE_PREFIX + currentMode;
+    }
+
+    function clearHistory() {
+      if (!confirm("Clear all history?")) return;
+      historyList = [];
+      saveHistory();
+      renderHistory();
+      latestData.innerHTML = `<div class="latest-empty">No scan yet</div>`;
+      document.getElementById("justScannedValue").textContent = "-";
+      hideStatus();
+      scanBox.focus();
+    }
+
+    function downloadCSV() {
+      if (historyList.length === 0) {
+        alert("No history data to export.");
+        return;
+      }
+
+      const rows = [["No", "Mode", "Scan Time", "Scanned Code", "SP", "Sheet Row", "Update", "Data"]];
+
+      historyList.forEach(function(item) {
+        rows.push([item.no, item.mode, item.scanTime, item.scannedCode, item.spNumber, item.rowNumber, item.updateText, item.dataText]);
+      });
+
+      const csv = rows.map(function(row) {
+        return row.map(function(cell) {
+          return `"${String(cell || "").replace(/"/g, '""')}"`;
+        }).join(",");
+      }).join("\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (currentMode === "IN" ? "SP_IN" : "SP_OUT") + "_Scan_History_" + formatFileDate(new Date()) + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      scanBox.focus();
+    }
+
+    function createGoogleSheet() {
+      if (historyList.length === 0) {
+        alert("No history data to export.");
+        return;
+      }
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = API_URL + "?action=createSheet";
+      form.target = "_blank";
+
+      const payloadInput = document.createElement("input");
+      payloadInput.type = "hidden";
+      payloadInput.name = "payload";
+      payloadInput.value = JSON.stringify(historyList.slice().reverse());
+
+      const codeInput = document.createElement("input");
+      codeInput.type = "hidden";
+      codeInput.name = "code";
+      codeInput.value = loginCode;
+
+      form.appendChild(payloadInput);
+      form.appendChild(codeInput);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+
+    async function startCamera() {
+      unlockSound();
+      scanBox.blur();
+      if (cameraRunning) return;
+
+      document.getElementById("cameraBox").style.display = "block";
+      document.getElementById("startCameraBtn").style.display = "none";
+      document.getElementById("stopCameraBtn").style.display = "inline-block";
+
+      try {
+        html5QrCode = new Html5Qrcode("reader");
+
+        const formats = [];
+        if (window.Html5QrcodeSupportedFormats) {
+          formats.push(
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.QR_CODE
+          );
+        }
+
+        const config = {
+          fps: 15,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const width = Math.floor(viewfinderWidth * 0.92);
+            const height = Math.floor(width * 0.42);
+            return {
+              width: width,
+              height: Math.min(height, Math.floor(viewfinderHeight * 0.65))
+            };
+          },
+          aspectRatio: 1.777
+        };
+
+        if (formats.length) config.formatsToSupport = formats;
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onCameraSuccess,
+          function() {}
+        );
+
+        cameraRunning = true;
+        showStatus("Camera started.", "success");
+
+      } catch (err) {
+        showStatus("Camera cannot start. Check browser camera permission.", "error");
+        document.getElementById("cameraBox").style.display = "none";
+        document.getElementById("startCameraBtn").style.display = "inline-block";
+        document.getElementById("stopCameraBtn").style.display = "none";
+      }
+    }
+
+    function onCameraSuccess(decodedText) {
+      unlockSound();
+      const code = String(decodedText || "").trim();
+      if (!code) return;
+      const now = Date.now();
+
+      if (code === lastCameraCode && now - lastCameraTime < 1200) return;
+
+      lastCameraCode = code;
+      lastCameraTime = now;
+      scanBox.value = code;
+      processScan(code, false);
+    }
+
+    async function stopCamera() {
+      try {
+        if (html5QrCode && cameraRunning) {
+          await html5QrCode.stop();
+          await html5QrCode.clear();
+        }
+      } catch (e) {}
+
+      html5QrCode = null;
+      cameraRunning = false;
+
+      document.getElementById("cameraBox").style.display = "none";
+      document.getElementById("startCameraBtn").style.display = "inline-block";
+      document.getElementById("stopCameraBtn").style.display = "none";
+      scanBox.focus();
+    }
+
+    function readyNextScan() {
+      scanBox.value = "";
+      if (cameraRunning) {
+        scanBox.blur();
+        return;
+      }
+      scanBox.focus();
+    }
+
+    function showStatus(message, type) {
+      statusBox.textContent = message;
+      statusBox.className = "status show " + type;
+    }
+
+    function hideStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
+    }
+
+    function apiCall(action, data) {
+      return new Promise(function(resolve, reject) {
+        if (!API_URL || API_URL.indexOf("https://") !== 0) {
+          reject(new Error("API_URL missing"));
+          return;
+        }
+
+        const callbackName = "sp2Callback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+        const params = Object.assign({}, data || {});
+        params.action = action;
+        params.callback = callbackName;
+        params._ = Date.now();
+
+        const query = Object.keys(params).map(function(k) {
+          return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+        }).join("&");
+
+        const script = document.createElement("script");
+        script.id = callbackName;
+
+        let done = false;
+        const timer = setTimeout(function() {
+          cleanup();
+          reject(new Error("API timeout"));
+        }, 45000);
+
+        function cleanup() {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[callbackName] = function(res) {
+          cleanup();
+          resolve(res);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error("API connection error"));
+        };
+
+        script.src = API_URL + (API_URL.includes("?") ? "&" : "?") + query;
+        document.body.appendChild(script);
+      });
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .trim()
+        .replace(/[\s\u00A0\u200B-\u200D\uFEFF]/g, "")
+        .toUpperCase();
+    }
+
+    function formatDateTime(date) {
+      return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()) + " " +
+        pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+    }
+
+    function formatTimeOnly(date) {
+      return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+    }
+
+    function formatFileDate(date) {
+      return date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + "_" +
+        pad(date.getHours()) + pad(date.getMinutes()) + pad(date.getSeconds());
+    }
+
+    function pad(num) {
+      return String(num).padStart(2, "0");
+    }
+
+    function escapeHtml(textValue) {
+      return String(textValue || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
