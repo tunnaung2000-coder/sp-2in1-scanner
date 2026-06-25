@@ -341,6 +341,10 @@
     .btn-csv { background: #22c55e; color: #052e16; }
     .btn-sheet { background: #facc15; color: #422006; }
 
+    #loginCode {
+      -webkit-text-security: disc;
+    }
+
     .hidden { display: none !important; }
 
     @media (max-width: 720px) {
@@ -369,12 +373,9 @@
   <div id="loginPage" class="page">
     <div class="panel login-panel">
       <div class="login-title">SP 2 in 1 Scanner</div>
-      <div class="login-hint">
-        82 = SP OUT Scanner<br>
-        87 = SP IN Scanner
-      </div>
+      <div class="login-hint">Enter access code</div>
 
-      <input id="loginCode" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Enter Code: 82 / 87">
+      <input id="loginCode" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Enter Code">
       <button class="login-btn" onclick="loginNow()">Login</button>
       <div id="loginStatus" class="status"></div>
     </div>
@@ -459,8 +460,9 @@
 
   <script>
     // သင့် Apps Script Web App /exec URL ကို ဒီနေရာမှာ ထည့်ပါ။
-    const API_URL = "https://script.google.com/macros/s/AKfycbx2bQcAx79er2zAH6F7MfHq13aR9_DTituyCpA22SE1WFDbcfgjLRWqursLPEy3_84U/exec";
-    const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v2_short";
+    const API_URL = "https://script.google.com/a/macros/mygamerslab.com/s/AKfycbx2bQcAx79er2zAH6F7MfHq13aR9_DTituyCpA22SE1WFDbcfgjLRWqursLPEy3_84U/exec";
+
+    const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v5_hidden";
     const HISTORY_STORAGE_PREFIX = "sp_2in1_history_";
     const MAX_HISTORY_KEEP = 5000;
     const MAX_TABLE_SHOW = 200;
@@ -536,27 +538,33 @@
     }
 
     function verifyLoginCode(isAuto) {
-      showLoginStatus("Checking login code...", "loading");
+      // Login ကို local-only စစ်မယ်။
+      // အရင် version မှာ login ဝင်ချိန် Apps Script API ကိုခေါ်ခဲ့လို့
+      // phone/browser cache/network ကြောင့် API timeout ဖြစ်ရင် login မဝင်နိုင်တာကို ကာကွယ်ထားပါတယ်။
+      const code = normalizeText(loginCode);
 
-      apiCall("login", { code: loginCode })
-        .then(function(res) {
-          if (res && res.status === "Success") {
-            currentMode = res.mode || "";
-            currentTitle = res.title || (currentMode === "IN" ? "SP IN Scanner" : "SP OUT Scanner");
-            sessionStorage.setItem(LOGIN_STORAGE_KEY, loginCode);
-            openApp();
-          } else {
-            sessionStorage.removeItem(LOGIN_STORAGE_KEY);
-            loginCode = "";
-            showLoginStatus((res && res.message) || "Invalid login code", "error");
-            if (!isAuto) playSound(false);
-          }
-        })
-        .catch(function(err) {
-          sessionStorage.removeItem(LOGIN_STORAGE_KEY);
-          loginCode = "";
-          showLoginStatus("API connection error: " + err.message, "error");
-        });
+      if (code === "082282") {
+        currentMode = "OUT";
+        currentTitle = "SP OUT Scanner";
+        sessionStorage.setItem(LOGIN_STORAGE_KEY, code);
+        loginCode = code;
+        openApp();
+        return;
+      }
+
+      if (code === "198787") {
+        currentMode = "IN";
+        currentTitle = "SP IN Scanner";
+        sessionStorage.setItem(LOGIN_STORAGE_KEY, code);
+        loginCode = code;
+        openApp();
+        return;
+      }
+
+      sessionStorage.removeItem(LOGIN_STORAGE_KEY);
+      loginCode = "";
+      showLoginStatus("Invalid code.", "error");
+      if (!isAuto) playSound(false);
     }
 
     function openApp() {
