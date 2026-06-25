@@ -1,4 +1,4 @@
-const CACHE_NAME = "sp-2in1-scanner-v3";
+const CACHE_NAME = "sp-2in1-scanner-v5";
 const APP_FILES = [
   "./",
   "./index.html",
