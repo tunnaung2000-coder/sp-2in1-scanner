@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SP 2 in 1 Scanner</title>
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SP Scanner">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -363,11 +370,11 @@
     <div class="panel login-panel">
       <div class="login-title">SP 2 in 1 Scanner</div>
       <div class="login-hint">
-        AG082282 = SP OUT Scanner<br>
-        AG198787 = SP IN Scanner
+        82 = SP OUT Scanner<br>
+        87 = SP IN Scanner
       </div>
 
-      <input id="loginCode" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter Login Code">
+      <input id="loginCode" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Enter Code: 82 / 87">
       <button class="login-btn" onclick="loginNow()">Login</button>
       <div id="loginStatus" class="status"></div>
     </div>
@@ -430,10 +437,10 @@
               <th>Mode</th>
               <th>Scan Time</th>
               <th>Scanned Code</th>
-              <th>SP</th>
-              <th>Sheet Row</th>
-              <th>Update</th>
-              <th>Data</th>
+              <th>BARCODE</th>
+              <th>PRODUCT</th>
+              <th>SN</th>
+              <th>QTY_</th>
             </tr>
           </thead>
           <tbody id="historyBody">
@@ -452,9 +459,9 @@
 
   <script>
     // သင့် Apps Script Web App /exec URL ကို ဒီနေရာမှာ ထည့်ပါ။
-    const API_URL = "https://script.google.com/macros/s/AKfycbwIyJ64azV6dmPK_pa4jSCEj80zybluzpHzOKFMfy8aIJ-P0pYnq-C-DD0GgRMlU1f6zw/exec";
+    const API_URL = "https://script.google.com/a/macros/mygamerslab.com/s/AKfycbx2bQcAx79er2zAH6F7MfHq13aR9_DTituyCpA22SE1WFDbcfgjLRWqursLPEy3_84U/exec";
 
-    const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v1";
+    const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v2_short";
     const HISTORY_STORAGE_PREFIX = "sp_2in1_history_";
     const MAX_HISTORY_KEEP = 5000;
     const MAX_TABLE_SHOW = 200;
@@ -916,10 +923,34 @@
       return parts.join(" | ");
     }
 
+    function getHistoryField(record, fieldName) {
+      const headers = record.headers || inventoryHeaders || [];
+      const values = record.values || [];
+      const field = normalizeText(fieldName);
+
+      let fallbackIndex = -1;
+      if (field === "BARCODE") fallbackIndex = 1;
+      if (field === "PRODUCT") fallbackIndex = 2;
+      if (field === "SN") fallbackIndex = 3;
+      if (field === "QTY") fallbackIndex = 4;
+
+      for (let i = 0; i < headers.length; i++) {
+        const h = normalizeText(headers[i]);
+
+        if (field === "BARCODE" && h.indexOf("BARCODE") !== -1) return values[i] || "";
+        if (field === "PRODUCT" && h.indexOf("PRODUCT") !== -1) return values[i] || "";
+        if (field === "SN" && (h === "SN" || h === "S/N" || h.indexOf("SERIAL") !== -1)) return values[i] || "";
+        if (field === "QTY" && (h.indexOf("QTY") !== -1 || h.indexOf("QUANTITY") !== -1)) return values[i] || "";
+      }
+
+      return fallbackIndex >= 0 ? (values[fallbackIndex] || "") : "";
+    }
+
     function addHistory(record) {
-      historyList.unshift(record);
+      // ပထမဆုံး scan ကို No 1 အဖြစ် အပေါ်ဆုံးကနေစပြရန် push သုံးထားပါတယ်။
+      historyList.push(record);
       if (historyList.length > MAX_HISTORY_KEEP) {
-        historyList = historyList.slice(0, MAX_HISTORY_KEEP);
+        historyList = historyList.slice(historyList.length - MAX_HISTORY_KEEP);
       }
       renumberHistory();
       saveHistory();
@@ -928,32 +959,39 @@
 
     function renumberHistory() {
       for (let i = 0; i < historyList.length; i++) {
-        historyList[i].no = historyList.length - i;
+        historyList[i].no = i + 1;
       }
     }
 
     function renderHistory() {
       document.getElementById("scanCount").textContent = historyList.length;
-      document.getElementById("lastScanned").textContent = historyList.length ? historyList[0].spNumber : "-";
+      document.getElementById("lastScanned").textContent = historyList.length ? historyList[historyList.length - 1].spNumber : "-";
 
       if (historyList.length === 0) {
         historyBody.innerHTML = `<tr><td colspan="8">No history yet</td></tr>`;
         return;
       }
 
-      const showList = historyList.slice(0, MAX_TABLE_SHOW);
+      const startIndex = Math.max(0, historyList.length - MAX_TABLE_SHOW);
+      const showList = historyList.slice(startIndex);
 
-      historyBody.innerHTML = showList.map(function(item) {
+      historyBody.innerHTML = showList.map(function(item, index) {
+        const no = startIndex + index + 1;
+        const barcode = getHistoryField(item, "BARCODE");
+        const product = getHistoryField(item, "PRODUCT");
+        const sn = getHistoryField(item, "SN");
+        const qty = getHistoryField(item, "QTY");
+
         return `
           <tr>
-            <td>${escapeHtml(item.no)}</td>
+            <td>${escapeHtml(no)}</td>
             <td>${escapeHtml(item.mode)}</td>
             <td>${escapeHtml(item.scanTime)}</td>
             <td>${escapeHtml(item.scannedCode)}</td>
-            <td>${escapeHtml(item.spNumber)}</td>
-            <td>${escapeHtml(item.rowNumber || "-")}</td>
-            <td>${escapeHtml(item.updateText || "-")}</td>
-            <td class="data-cell" title="${escapeHtml(item.dataText)}">${escapeHtml(item.dataText)}</td>
+            <td>${escapeHtml(barcode)}</td>
+            <td>${escapeHtml(product)}</td>
+            <td>${escapeHtml(sn)}</td>
+            <td>${escapeHtml(qty)}</td>
           </tr>
         `;
       }).join("");
@@ -963,6 +1001,15 @@
       try {
         const saved = localStorage.getItem(getHistoryKey());
         historyList = saved ? JSON.parse(saved) : [];
+
+        // အဟောင်း version မှာ latest scan ကို အပေါ်ဆုံးထားထားလို့ No က 2,1 လိုဖြစ်နိုင်ပါတယ်။
+        // အခု version မှာ ပထမဆုံး scan = No 1 ဖြစ်အောင် old history ကို auto ပြန်စီပေးပါတယ်။
+        if (historyList.length > 1 && Number(historyList[0].no || 0) > Number(historyList[1].no || 0)) {
+          historyList.reverse();
+        }
+
+        renumberHistory();
+        saveHistory();
       } catch (e) {
         historyList = [];
       }
@@ -994,10 +1041,19 @@
         return;
       }
 
-      const rows = [["No", "Mode", "Scan Time", "Scanned Code", "SP", "Sheet Row", "Update", "Data"]];
+      const rows = [["No", "Mode", "Scan Time", "Scanned Code", "BARCODE", "PRODUCT", "SN", "QTY_"]];
 
-      historyList.forEach(function(item) {
-        rows.push([item.no, item.mode, item.scanTime, item.scannedCode, item.spNumber, item.rowNumber, item.updateText, item.dataText]);
+      historyList.forEach(function(item, index) {
+        rows.push([
+          index + 1,
+          item.mode || currentMode || "",
+          item.scanTime || "",
+          item.scannedCode || "",
+          getHistoryField(item, "BARCODE"),
+          getHistoryField(item, "PRODUCT"),
+          getHistoryField(item, "SN"),
+          getHistoryField(item, "QTY")
+        ]);
       });
 
       const csv = rows.map(function(row) {
@@ -1032,7 +1088,7 @@
       const payloadInput = document.createElement("input");
       payloadInput.type = "hidden";
       payloadInput.name = "payload";
-      payloadInput.value = JSON.stringify(historyList.slice().reverse());
+      payloadInput.value = JSON.stringify(historyList);
 
       const codeInput = document.createElement("input");
       codeInput.type = "hidden";
@@ -1237,6 +1293,14 @@
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("service-worker.js").catch(function(err) {
+          console.log("Service worker register failed:", err);
+        });
+      });
     }
   </script>
 </body>
