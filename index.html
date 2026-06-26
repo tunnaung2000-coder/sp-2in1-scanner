@@ -457,41 +457,11 @@
       </div>
     </div>
   </div>
-  (function clearOldChromeCacheOnce() {
-  const RESET_KEY = "sp_2in1_force_cache_reset_v1";
-
-  if (localStorage.getItem(RESET_KEY) === "done") {
-    return;
-  }
-
-  localStorage.setItem(RESET_KEY, "done");
-
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      return Promise.all(regs.map(function(reg) {
-        return reg.unregister();
-      }));
-    }).then(function() {
-      if ("caches" in window) {
-        return caches.keys().then(function(keys) {
-          return Promise.all(keys.map(function(key) {
-            return caches.delete(key);
-          }));
-        });
-      }
-    }).then(function() {
-      location.reload(true);
-    }).catch(function() {
-      location.reload(true);
-    });
-  } else {
-    location.reload(true);
-  }
-})();
 
   <script>
     // သင့် Apps Script Web App /exec URL ကို ဒီနေရာမှာ ထည့်ပါ။
-    const API_URL = "https://script.google.com/macros/s/AKfycbwIyJ64azV6dmPK_pa4jSCEj80zybluzpHzOKFMfy8aIJ-P0pYnq-C-DD0GgRMlU1f6zw/exec";
+    const API_URL = "https://script.google.com/a/macros/mygamerslab.com/s/AKfycbx2bQcAx79er2zAH6F7MfHq13aR9_DTituyCpA22SE1WFDbcfgjLRWqursLPEy3_84U/exec";
+
     const LOGIN_STORAGE_KEY = "sp_2in1_login_code_v5_hidden";
     const HISTORY_STORAGE_PREFIX = "sp_2in1_history_";
     const MAX_HISTORY_KEEP = 5000;
